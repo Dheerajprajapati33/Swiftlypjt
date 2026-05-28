@@ -1,0 +1,15 @@
+{
+  "name": "swiftly-backend",
+  "version": "1.0.0",
+  "description": "Express server for Swiftly auth and bookings",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.19.2",
+    "nodemailer": "^6.9.13"
+  }
+}
