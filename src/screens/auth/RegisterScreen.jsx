@@ -10,14 +10,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  SafeAreaView,
+  StatusBar,
 } from "react-native";
-
 import { AuthContext } from "../../context/AuthContext";
-import colors from "../../styles/colors";
+import { ThemeContext } from "../../context/ThemeContext";
+import Header from "../../components/Header";
 
 const RegisterScreen = ({ navigation }) => {
   const { register } = useContext(AuthContext);
-
+  const { isDarkMode, background, cardBackground, text, secondaryText, border, inputBackground } = useContext(ThemeContext);
   const [submitting, setSubmitting] = useState(false);
 
   // Form State
@@ -102,7 +104,6 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   const handleRegister = async () => {
-
     // Touch all fields to trigger full validation
     const fields = ["name", "email", "profileUrl", "password", "confirmPassword"];
     const newTouched = {};
@@ -122,7 +123,7 @@ const RegisterScreen = ({ navigation }) => {
     setErrors(newErrors);
 
     if (hasError) {
-      alert("Validation Error", "Please fix the errors in the form before submitting.");
+      Alert.alert("Validation Error", "Please fix the errors in the form before submitting.");
       return;
     }
 
@@ -137,7 +138,7 @@ const RegisterScreen = ({ navigation }) => {
     setSubmitting(false);
 
     if (result.success) {
-      alert(
+      Alert.alert(
         "Account Created", 
         "Your account has been registered successfully! Please login with your details.",
         [
@@ -145,193 +146,210 @@ const RegisterScreen = ({ navigation }) => {
         ]
       );
     } else {
-      alert("Registration Failed", result.error);
+      Alert.alert("Registration Failed", result.error);
     }
   };
 
   const getInputStyle = (field) => {
+    const baseStyle = [
+      styles.input,
+      { backgroundColor: inputBackground, borderColor: border, color: text }
+    ];
     if (touched[field] && errors[field]) {
-      return [styles.input, styles.inputError];
+      return [...baseStyle, styles.inputError];
     }
     if (touched[field] && !errors[field]) {
-      return [styles.input, styles.inputSuccess];
+      return [...baseStyle, styles.inputSuccess];
     }
-    return styles.input;
+    return baseStyle;
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.keyboardContainer}
-    >
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.card}>
-          <Text style={styles.heading}>Create Account</Text>
-          <Text style={styles.subheading}>Join Swiftly Home Services today</Text>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={cardBackground} />
+      
+      {/* Top Header with theme selector */}
+      <Header showProfile={false} />
 
-          {/* Name Field */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Full Name</Text>
-            <TextInput
-              placeholder="Enter your full name"
-              style={getInputStyle("name")}
-              value={values.name}
-              onChangeText={(val) => handleChange("name", val)}
-              onBlur={() => handleBlur("name")}
-              placeholderTextColor="#999"
-            />
-            {touched.name && errors.name ? (
-              <Text style={styles.errorText}>{errors.name}</Text>
-            ) : null}
-          </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardContainer}
+      >
+        <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+          <View style={[styles.card, { backgroundColor: cardBackground, borderColor: border }]}>
+            <Text style={[styles.heading, { color: text }]}>Create Account</Text>
+            <Text style={[styles.subheading, { color: secondaryText }]}>Join Swiftly Home Services today</Text>
 
-          {/* Email Field */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email Address</Text>
-            <TextInput
-              placeholder="Enter your email"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={getInputStyle("email")}
-              value={values.email}
-              onChangeText={(val) => handleChange("email", val)}
-              onBlur={() => handleBlur("email")}
-              placeholderTextColor="#999"
-            />
-            {touched.email && errors.email ? (
-              <Text style={styles.errorText}>{errors.email}</Text>
-            ) : null}
-          </View>
-
-          {/* Role Picker (Custom segmented buttons) */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Register As</Text>
-            <View style={styles.roleContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.roleButton,
-                  role === "customer" && styles.roleButtonActive,
-                ]}
-                onPress={() => setRole("customer")}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.roleButtonText,
-                    role === "customer" && styles.roleButtonTextActive,
-                  ]}
-                >
-                  Customer
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.roleButton,
-                  role === "service_provider" && styles.roleButtonActive,
-                ]}
-                onPress={() => setRole("service_provider")}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.roleButtonText,
-                    role === "service_provider" && styles.roleButtonTextActive,
-                  ]}
-                >
-                  Service Provider
-                </Text>
-              </TouchableOpacity>
+            {/* Name Field */}
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { color: text }]}>Full Name</Text>
+              <TextInput
+                placeholder="Enter your full name"
+                style={getInputStyle("name")}
+                value={values.name}
+                onChangeText={(val) => handleChange("name", val)}
+                onBlur={() => handleBlur("name")}
+                placeholderTextColor={isDarkMode ? '#888' : '#999'}
+              />
+              {touched.name && errors.name ? (
+                <Text style={styles.errorText}>{errors.name}</Text>
+              ) : null}
             </View>
+
+            {/* Email Field */}
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { color: text }]}>Email Address</Text>
+              <TextInput
+                placeholder="Enter your email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={getInputStyle("email")}
+                value={values.email}
+                onChangeText={(val) => handleChange("email", val)}
+                onBlur={() => handleBlur("email")}
+                placeholderTextColor={isDarkMode ? '#888' : '#999'}
+              />
+              {touched.email && errors.email ? (
+                <Text style={styles.errorText}>{errors.email}</Text>
+              ) : null}
+            </View>
+
+            {/* Role Picker (Custom segmented buttons) */}
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { color: text }]}>Register As</Text>
+              <View style={[styles.roleContainer, { borderColor: border }]}>
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
+                    { backgroundColor: inputBackground },
+                    role === "customer" && styles.roleButtonActive,
+                  ]}
+                  onPress={() => setRole("customer")}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.roleButtonText,
+                      { color: secondaryText },
+                      role === "customer" && styles.roleButtonTextActive,
+                    ]}
+                  >
+                    Customer
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
+                    { backgroundColor: inputBackground },
+                    role === "service_provider" && styles.roleButtonActive,
+                  ]}
+                  onPress={() => setRole("service_provider")}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.roleButtonText,
+                      { color: secondaryText },
+                      role === "service_provider" && styles.roleButtonTextActive,
+                    ]}
+                  >
+                    Service Provider
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Profile URL Field */}
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { color: text }]}>Profile Image URL (Optional)</Text>
+              <TextInput
+                placeholder="https://example.com/avatar.jpg"
+                autoCapitalize="none"
+                style={getInputStyle("profileUrl")}
+                value={values.profileUrl}
+                onChangeText={(val) => handleChange("profileUrl", val)}
+                onBlur={() => handleBlur("profileUrl")}
+                placeholderTextColor={isDarkMode ? '#888' : '#999'}
+              />
+              {touched.profileUrl && errors.profileUrl ? (
+                <Text style={styles.errorText}>{errors.profileUrl}</Text>
+              ) : null}
+            </View>
+
+            {/* Password Field */}
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { color: text }]}>Password</Text>
+              <TextInput
+                placeholder="Create a strong password"
+                secureTextEntry
+                autoCapitalize="none"
+                style={getInputStyle("password")}
+                value={values.password}
+                onChangeText={(val) => handleChange("password", val)}
+                onBlur={() => handleBlur("password")}
+                placeholderTextColor={isDarkMode ? '#888' : '#999'}
+              />
+              {touched.password && errors.password ? (
+                <Text style={styles.errorText}>{errors.password}</Text>
+              ) : null}
+            </View>
+
+            {/* Confirm Password Field */}
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { color: text }]}>Confirm Password</Text>
+              <TextInput
+                placeholder="Repeat your password"
+                secureTextEntry
+                autoCapitalize="none"
+                style={getInputStyle("confirmPassword")}
+                value={values.confirmPassword}
+                onChangeText={(val) => handleChange("confirmPassword", val)}
+                onBlur={() => handleBlur("confirmPassword")}
+                placeholderTextColor={isDarkMode ? '#888' : '#999'}
+              />
+              {touched.confirmPassword && errors.confirmPassword ? (
+                <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+              ) : null}
+            </View>
+
+            {/* Submit Button */}
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleRegister}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Register</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Navigate to Login */}
+            <TouchableOpacity
+              style={styles.linkContainer}
+              onPress={() => navigation.navigate("Login")}
+            >
+              <Text style={[styles.linkText, { color: secondaryText }]}>
+                Already have an account? <Text style={styles.linkTextBold}>Login</Text>
+              </Text>
+            </TouchableOpacity>
           </View>
-
-          {/* Profile URL Field */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Profile Image URL (Optional)</Text>
-            <TextInput
-              placeholder="https://example.com/avatar.jpg"
-              autoCapitalize="none"
-              style={getInputStyle("profileUrl")}
-              value={values.profileUrl}
-              onChangeText={(val) => handleChange("profileUrl", val)}
-              onBlur={() => handleBlur("profileUrl")}
-              placeholderTextColor="#999"
-            />
-            {touched.profileUrl && errors.profileUrl ? (
-              <Text style={styles.errorText}>{errors.profileUrl}</Text>
-            ) : null}
-          </View>
-
-          {/* Password Field */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              placeholder="Create a strong password"
-              secureTextEntry
-              autoCapitalize="none"
-              style={getInputStyle("password")}
-              value={values.password}
-              onChangeText={(val) => handleChange("password", val)}
-              onBlur={() => handleBlur("password")}
-              placeholderTextColor="#999"
-            />
-            {touched.password && errors.password ? (
-              <Text style={styles.errorText}>{errors.password}</Text>
-            ) : null}
-          </View>
-
-          {/* Confirm Password Field */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Confirm Password</Text>
-            <TextInput
-              placeholder="Repeat your password"
-              secureTextEntry
-              autoCapitalize="none"
-              style={getInputStyle("confirmPassword")}
-              value={values.confirmPassword}
-              onChangeText={(val) => handleChange("confirmPassword", val)}
-              onBlur={() => handleBlur("confirmPassword")}
-              placeholderTextColor="#999"
-            />
-            {touched.confirmPassword && errors.confirmPassword ? (
-              <Text style={styles.errorText}>{errors.confirmPassword}</Text>
-            ) : null}
-          </View>
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleRegister}
-            disabled={submitting}
-          >
-            {submitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Register</Text>
-            )}
-          </TouchableOpacity>
-
-          {/* Navigate to Login */}
-          <TouchableOpacity
-            style={styles.linkContainer}
-            onPress={() => navigation.navigate("Login")}
-          >
-            <Text style={styles.linkText}>
-              Already have an account? <Text style={styles.linkTextBold}>Login</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 export default RegisterScreen;
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   keyboardContainer: {
     flex: 1,
-    backgroundColor: "#F5F6FA",
   },
   container: {
     flexGrow: 1,
@@ -339,7 +357,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   card: {
-    backgroundColor: "#fff",
     borderRadius: 24,
     padding: 24,
     shadowColor: "#000",
@@ -348,16 +365,15 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 5,
     marginVertical: 20,
+    borderWidth: 1,
   },
   heading: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#111",
     textAlign: "center",
   },
   subheading: {
     fontSize: 14,
-    color: "#666",
     textAlign: "center",
     marginTop: 6,
     marginBottom: 24,
@@ -368,17 +384,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#444",
     marginBottom: 6,
   },
   input: {
     borderWidth: 1.5,
-    borderColor: "#E5E8F0",
     borderRadius: 14,
     padding: 14,
     fontSize: 15,
-    color: "#111",
-    backgroundColor: "#F9FAFC",
   },
   inputError: {
     borderColor: "#FF6363",
@@ -396,7 +408,6 @@ const styles = StyleSheet.create({
   roleContainer: {
     flexDirection: "row",
     borderWidth: 1.5,
-    borderColor: "#E5E8F0",
     borderRadius: 14,
     overflow: "hidden",
   },
@@ -404,7 +415,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     alignItems: "center",
-    backgroundColor: "#F9FAFC",
   },
   roleButtonActive: {
     backgroundColor: "#6C63FF",
@@ -412,7 +422,6 @@ const styles = StyleSheet.create({
   roleButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#666",
   },
   roleButtonTextActive: {
     color: "#fff",
@@ -440,7 +449,6 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 14,
-    color: "#666",
   },
   linkTextBold: {
     color: "#6C63FF",

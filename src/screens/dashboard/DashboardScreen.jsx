@@ -23,6 +23,7 @@ import { ThemeContext } from "../../context/ThemeContext";
 import colors from "../../styles/colors";
 import ServiceCard from "../../components/ServiceCard";
 import API from "../../api/axios";
+import Header from "../../components/Header";
 
 const { width } = Dimensions.get("window");
 
@@ -31,7 +32,6 @@ const DashboardScreen = () => {
   const { isDarkMode, toggleTheme, background, cardBackground, text, secondaryText, border, inputBackground } = useContext(ThemeContext);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [menuVisible, setMenuVisible] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
   const [bookingModalVisible, setBookingModalVisible] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -46,8 +46,71 @@ const DashboardScreen = () => {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
 
-  // Fallback avatar image to shown default
+  // Fallback avatar image
   const avatarUrl = user?.profileUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150";
+
+  // AI Diagnostic State
+  const [aiModalVisible, setAiModalVisible] = useState(false);
+  const [aiQuery, setAiQuery] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
+
+  const handleResetAiAssistant = () => {
+    setAiQuery('');
+    setAiResult(null);
+    setAiLoading(false);
+  };
+
+  const handleCloseAiModal = () => {
+    setAiModalVisible(false);
+    handleResetAiAssistant();
+  };
+
+  const handleRunDiagnosis = async () => {
+    if (!aiQuery.trim()) {
+      Alert.alert('Input Required', 'Please enter a description of your household problem.');
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const response = await API.post('/ai/diagnose', { query: aiQuery });
+      if (response.data.success === false && response.data.errorType === 'MISSING_API_KEY') {
+        setAiResult({
+          diagnosis: response.data.message,
+          urgency: 'Low',
+          recommendedCategory: 'General',
+          actions: ['Get Gemini API Key from aistudio.google.com', 'Paste it in your server/.env file under GEMINI_API_KEY'],
+          bookingSuggestionText: 'Configure your Gemini key on the backend to activate fully.'
+        });
+      } else {
+        setAiResult(response.data);
+      }
+    } catch (error) {
+      console.error("AI Diagnostic query failed:", error);
+      Alert.alert('Network Error', 'Failed to reach AI Diagnostic server. Please ensure backend is running.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const getUrgencyStyle = (urgency) => {
+    const norm = (urgency || 'low').toLowerCase();
+    if (norm.includes('emergency')) {
+      return { bg: '#FFCCC7', text: '#CF1322' };
+    }
+    if (norm.includes('high')) {
+      return { bg: '#FFF1F0', text: '#F5222D' };
+    }
+    if (norm.includes('medium')) {
+      return { bg: '#FFF7E6', text: '#D46B08' };
+    }
+    return { bg: '#F6FFED', text: '#389E0D' };
+  };
+
+  const getMatchingServices = (category) => {
+    if (!category || !services) return [];
+    return services.filter(s => s.category && s.category.toLowerCase() === category.toLowerCase());
+  };
 
   const fetchServices = async () => {
     try {
@@ -84,13 +147,13 @@ const DashboardScreen = () => {
 
   const handleBookService = async () => {
     if (!date.trim() || !time.trim()) {
-      alert('Validation Error', 'Please fill in both Date and Time.');
+      Alert.alert('Validation Error', 'Please fill in both Date and Time.');
       return;
     }
 
     if (paymentMethod === 'card') {
       if (!cardDetails.number || !cardDetails.expiry || !cardDetails.cvv) {
-        alert('Validation Error', 'Please enter card payment details.');
+        Alert.alert('Validation Error', 'Please enter card payment details.');
         return;
       }
     }
@@ -113,11 +176,11 @@ const DashboardScreen = () => {
           setPreviewUrl(response.data.previewUrl);
         }
       } else {
-        alert('Booking Error', 'Failed to complete booking. Please try again.');
+        Alert.alert('Booking Error', 'Failed to complete booking. Please try again.');
       }
     } catch (error) {
       console.error('Booking request failed:', error);
-      alert('Network Error', error.response?.data?.message || 'Could not reach server.');
+      Alert.alert('Network Error', error.response?.data?.message || 'Could not reach server.');
     } finally {
       setBookingLoading(false);
     }
@@ -129,7 +192,7 @@ const DashboardScreen = () => {
       if (supported) {
         await Linking.openURL(previewUrl);
       } else {
-        alert('Error', "Can't open preview URL: " + previewUrl);
+        Alert.alert('Error', "Can't open preview URL: " + previewUrl);
       }
     }
   };
@@ -138,41 +201,8 @@ const DashboardScreen = () => {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={cardBackground} />
 
-      {/* Header / Top Bar */}
-      <View style={[styles.header, { backgroundColor: cardBackground, borderBottomColor: border }]}>
-        <View style={styles.logoContainer}>
-          <Text style={[styles.logoText, { color: isDarkMode ? '#FFFFFF' : '#6C63FF' }]}>Swiftly</Text>
-          <View style={styles.logoDot} />
-          
-          {/* Theme Toggler Button just after Swiftly text */}
-          <TouchableOpacity 
-            onPress={toggleTheme} 
-            style={[styles.themeToggle, { borderColor: border, backgroundColor: isDarkMode ? '#25252A' : '#F2F4F7' }]}
-            activeOpacity={0.7}
-          >
-            <Ionicons 
-              name={isDarkMode ? "sunny" : "moon"} 
-              size={16} 
-              color={isDarkMode ? "#FFD700" : "#6C63FF"} 
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* User Info & Avatar Container */}
-        <TouchableOpacity
-          style={styles.profileContainer}
-          onPress={() => setMenuVisible(true)}
-          activeOpacity={0.7}
-        >
-          <View style={styles.userInfo}>
-            <Text style={[styles.welcomeText, { color: secondaryText }]}>Hello,</Text>
-            <Text style={[styles.userNameText, { color: text }]} numberOfLines={1}>
-              {user?.name || "Guest"}
-            </Text>
-          </View>
-          <Image source={{ uri: avatarUrl }} style={[styles.avatar, { borderColor: isDarkMode ? '#A0A5B5' : '#6C63FF' }]} />
-        </TouchableOpacity>
-      </View>
+      {/* Unified Header */}
+      <Header />
 
       {/* Dynamic Services List */}
       {loading && services.length === 0 ? (
@@ -216,49 +246,6 @@ const DashboardScreen = () => {
           }
         />
       )}
-
-      {/* Profile Logout Dialog Modal */}
-      <Modal
-        visible={menuVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setMenuVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setMenuVisible(false)}
-        >
-          <View style={[styles.menuCard, { backgroundColor: cardBackground }]}>
-            <View style={styles.menuHeader}>
-              <Image source={{ uri: avatarUrl }} style={styles.largeAvatar} />
-              <View style={styles.menuUserDetail}>
-                <Text style={[styles.menuUserName, { color: text }]} numberOfLines={1}>{user?.name}</Text>
-                <Text style={[styles.menuUserEmail, { color: secondaryText }]} numberOfLines={1}>{user?.email}</Text>
-              </View>
-            </View>
-
-            <View style={[styles.menuSeparator, { backgroundColor: border }]} />
-
-            <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={() => {
-                setMenuVisible(false);
-                logout();
-              }}
-            >
-              <Text style={styles.logoutText}>🚪 Logout</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => setMenuVisible(false)}
-            >
-              <Text style={[styles.cancelText, { color: secondaryText }]}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
 
       {/* Booking Form Modal */}
       {selectedService && (
@@ -438,6 +425,150 @@ const DashboardScreen = () => {
           </View>
         </Modal>
       )}
+
+      {/* Floating AI Diagnostic Assistant Button */}
+      <TouchableOpacity
+        style={styles.floatingAiButton}
+        onPress={() => setAiModalVisible(true)}
+        activeOpacity={0.85}
+      >
+        <Ionicons name="sparkles" size={18} color="#FFF" />
+        <Text style={styles.floatingAiButtonText}>AI Diagnostic</Text>
+      </TouchableOpacity>
+
+      {/* AI Diagnostic Assistant Modal */}
+      <Modal
+        visible={aiModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleCloseAiModal}
+      >
+        <View style={styles.aiModalOverlay}>
+          <View style={[styles.aiModalContent, { backgroundColor: cardBackground }]}>
+            <View style={styles.aiModalHeader}>
+              <View style={styles.aiHeaderTitleContainer}>
+                <Ionicons name="sparkles" size={20} color="#6C63FF" />
+                <Text style={[styles.aiModalTitle, { color: text }]}>AI Diagnostic Helper</Text>
+              </View>
+              <TouchableOpacity onPress={handleCloseAiModal} style={styles.aiCloseButton}>
+                <Ionicons name="close" size={24} color={secondaryText} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.divider, { backgroundColor: border }]} />
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.aiModalScroll}>
+              {!aiResult ? (
+                <View>
+                  <Text style={[styles.aiInstructionText, { color: secondaryText }]}>
+                    Describe your household problem in detail (e.g., "my washing machine is leaking soapy water" or "my socket is sparking when plugged in"). Our AI will diagnose the issue, provide safety warnings, and find the best service provider category.
+                  </Text>
+                  
+                  <TextInput
+                    style={[styles.aiInput, { backgroundColor: inputBackground, borderColor: border, color: text }]}
+                    placeholder="Describe your issue..."
+                    placeholderTextColor={isDarkMode ? '#888' : '#999'}
+                    multiline={true}
+                    numberOfLines={4}
+                    value={aiQuery}
+                    onChangeText={setAiQuery}
+                  />
+
+                  <TouchableOpacity
+                    style={styles.aiSubmitButton}
+                    onPress={handleRunDiagnosis}
+                    disabled={aiLoading}
+                  >
+                    {aiLoading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <>
+                        <Ionicons name="flash" size={16} color="#FFF" style={{ marginRight: 6 }} />
+                        <Text style={styles.aiSubmitButtonText}>Diagnose Issue</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View>
+                  {/* Diagnosis Report Card */}
+                  <View style={[styles.aiResultCard, { backgroundColor: inputBackground, borderColor: border }]}>
+                    <View style={styles.aiResultHeader}>
+                      <Text style={[styles.aiResultLabel, { color: secondaryText }]}>DIAGNOSIS REPORT</Text>
+                      <View style={[styles.urgencyBadge, { backgroundColor: getUrgencyStyle(aiResult.urgency).bg }]}>
+                        <Text style={[styles.urgencyBadgeText, { color: getUrgencyStyle(aiResult.urgency).text }]}>
+                          {aiResult.urgency} Urgency
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text style={[styles.aiDiagnosisText, { color: text }]}>{aiResult.diagnosis}</Text>
+                  </View>
+
+                  {/* Safety / DIY checks */}
+                  {aiResult.actions && aiResult.actions.length > 0 && (
+                    <View style={styles.actionsSection}>
+                      <Text style={[styles.sectionSubtitleText, { color: text }]}>⚠️ Recommended Safety Checks:</Text>
+                      {aiResult.actions.map((action, idx) => (
+                        <View key={idx} style={styles.actionItemRow}>
+                          <Ionicons name="checkmark-circle-outline" size={16} color="#6C63FF" style={{ marginTop: 2, marginRight: 8 }} />
+                          <Text style={[styles.actionItemText, { color: secondaryText }]}>{action}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  <View style={[styles.divider, { backgroundColor: border }]} />
+
+                  {/* Recommended Category Matcher */}
+                  <View style={styles.suggestionSection}>
+                    <Text style={[styles.sectionSubtitleText, { color: text }]}>Matched Service Category:</Text>
+                    <Text style={styles.categoryMatchBadge}>{aiResult.recommendedCategory}</Text>
+                    <Text style={[styles.bookingSuggestText, { color: secondaryText }]}>{aiResult.bookingSuggestionText}</Text>
+                    
+                    {/* Matching Services List */}
+                    <Text style={[styles.matchingServicesTitle, { color: text }]}>Available Providers for this Category:</Text>
+                    {getMatchingServices(aiResult.recommendedCategory).length === 0 ? (
+                      <Text style={[styles.noMatchingServicesText, { color: secondaryText }]}>
+                        No active providers listed in the {aiResult.recommendedCategory} category at the moment.
+                      </Text>
+                    ) : (
+                      getMatchingServices(aiResult.recommendedCategory).map((srv) => (
+                        <View key={srv._id} style={[styles.matchedProviderCard, { backgroundColor: cardBackground, borderColor: border }]}>
+                          <View style={styles.matchedProviderHeader}>
+                            <Image source={{ uri: srv.providerAvatar }} style={styles.matchedAvatar} />
+                            <View style={styles.matchedInfo}>
+                              <Text style={[styles.matchedName, { color: text }]} numberOfLines={1}>{srv.name}</Text>
+                              <Text style={styles.matchedCategory} numberOfLines={1}>{srv.providerName}</Text>
+                            </View>
+                            <Text style={styles.matchedPrice}>{srv.price}</Text>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.matchedBookButton}
+                            onPress={() => {
+                              handleCloseAiModal();
+                              handleOpenBookModal(srv);
+                            }}
+                          >
+                            <Text style={styles.matchedBookText}>Book This Provider</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ))
+                    )}
+                  </View>
+
+                  <TouchableOpacity
+                    style={[styles.aiResetButton, { borderColor: border }]}
+                    onPress={handleResetAiAssistant}
+                  >
+                    <Text style={[styles.aiResetButtonText, { color: text }]}>Diagnose Another Problem</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -805,5 +936,216 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 15,
+  },
+  floatingAiButton: {
+    position: "absolute",
+    bottom: 25,
+    right: 25,
+    backgroundColor: "#6C63FF",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 25,
+    shadowColor: "#6C63FF",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  floatingAiButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    marginLeft: 6,
+    fontSize: 14,
+  },
+  aiModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  aiModalContent: {
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    maxHeight: "90%",
+    padding: 24,
+  },
+  aiModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  aiHeaderTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  aiModalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginLeft: 8,
+  },
+  aiCloseButton: {
+    padding: 4,
+  },
+  aiModalScroll: {
+    paddingBottom: 40,
+    paddingTop: 10,
+  },
+  aiInstructionText: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  aiInput: {
+    borderWidth: 1.5,
+    borderRadius: 14,
+    padding: 14,
+    fontSize: 15,
+    height: 100,
+    textAlignVertical: "top",
+    marginBottom: 16,
+  },
+  aiSubmitButton: {
+    backgroundColor: "#6C63FF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    borderRadius: 14,
+  },
+  aiSubmitButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 15,
+  },
+  aiResultCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 16,
+  },
+  aiResultHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  aiResultLabel: {
+    fontSize: 11,
+    fontWeight: "bold",
+    letterSpacing: 1,
+  },
+  urgencyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  urgencyBadgeText: {
+    fontSize: 11,
+    fontWeight: "bold",
+  },
+  aiDiagnosisText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  actionsSection: {
+    marginBottom: 18,
+  },
+  actionItemRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 6,
+  },
+  actionItemText: {
+    fontSize: 13,
+    lineHeight: 18,
+    flex: 1,
+  },
+  suggestionSection: {
+    marginTop: 8,
+  },
+  categoryMatchBadge: {
+    backgroundColor: "#EEECFF",
+    color: "#6C63FF",
+    fontWeight: "bold",
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    fontSize: 13,
+    marginBottom: 8,
+  },
+  bookingSuggestText: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  matchingServicesTitle: {
+    fontSize: 13,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  noMatchingServicesText: {
+    fontSize: 13,
+    fontStyle: "italic",
+    marginBottom: 15,
+  },
+  matchedProviderCard: {
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 10,
+  },
+  matchedProviderHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  matchedAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  matchedInfo: {
+    marginLeft: 10,
+    flex: 1,
+  },
+  matchedName: {
+    fontSize: 13,
+    fontWeight: "bold",
+  },
+  matchedCategory: {
+    fontSize: 11,
+    color: "#888",
+    marginTop: 1,
+  },
+  matchedPrice: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#6C63FF",
+  },
+  matchedBookButton: {
+    backgroundColor: "#EEECFF",
+    borderWidth: 1,
+    borderColor: "#6C63FF",
+    paddingVertical: 8,
+    alignItems: "center",
+    borderRadius: 10,
+    marginTop: 10,
+  },
+  matchedBookText: {
+    color: "#6C63FF",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  aiResetButton: {
+    borderWidth: 1.5,
+    padding: 14,
+    borderRadius: 14,
+    alignItems: "center",
+    marginTop: 15,
+  },
+  aiResetButtonText: {
+    fontWeight: "bold",
+    fontSize: 14,
   },
 });

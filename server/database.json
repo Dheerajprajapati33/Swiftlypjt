@@ -22,6 +22,14 @@
       "profileUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250",
       "role": "customer",
       "password": "121212"
+    },
+    {
+      "id": "1779964531100",
+      "name": "anand",
+      "email": "anandsahani617@gmail.com",
+      "profileUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250",
+      "role": "customer",
+      "password": "121212"
     }
   ],
   "bookings": [
@@ -57,8 +65,44 @@
       "date": "2026-05-29",
       "time": "10:00 AM",
       "paymentMethod": "cod",
-      "status": "processing",
+      "status": "completed",
       "createdAt": "2026-05-28T09:37:31.681Z"
+    },
+    {
+      "id": "1779966070861",
+      "userEmail": "dheeraj786124@gmail.com",
+      "userName": "dheeraj",
+      "serviceName": "plumber",
+      "providerEmail": "ab@gmail.com",
+      "date": "2026-05-29",
+      "time": "10:00 AM",
+      "paymentMethod": "cod",
+      "status": "processing",
+      "createdAt": "2026-05-28T11:01:10.861Z"
+    },
+    {
+      "id": "1779966187388",
+      "userEmail": "dheeraj786124@gmail.com",
+      "userName": "dheeraj",
+      "serviceName": "plumber",
+      "providerEmail": "ab@gmail.com",
+      "date": "2026-05-29",
+      "time": "10:00 AM",
+      "paymentMethod": "cod",
+      "status": "processing",
+      "createdAt": "2026-05-28T11:03:07.388Z"
+    },
+    {
+      "id": "1779966622458",
+      "userEmail": "dheeraj786124@gmail.com",
+      "userName": "dheeraj",
+      "serviceName": "plumber",
+      "providerEmail": "ab@gmail.com",
+      "date": "2026-05-29",
+      "time": "10:00 AM",
+      "paymentMethod": "cod",
+      "status": "processing",
+      "createdAt": "2026-05-28T11:10:22.458Z"
     }
   ],
   "services": [

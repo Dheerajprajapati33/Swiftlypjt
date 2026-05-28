@@ -4,6 +4,7 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -376,6 +377,80 @@ app.post('/api/bookings/book', async (req, res) => {
     emailSent,
     previewUrl
   });
+});
+
+app.post('/api/ai/diagnose', async (req, res) => {
+  const { query } = req.body;
+
+  if (!query || !query.trim()) {
+    return res.status(400).json({ message: 'Query is required for AI diagnosis.' });
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey.trim() === '' || apiKey.startsWith('your_')) {
+    return res.status(200).json({
+      success: false,
+      errorType: 'MISSING_API_KEY',
+      message: 'Gemini API Key is not configured on the backend server. Please get a free API Key from Google AI Studio (https://aistudio.google.com/) and configure GEMINI_API_KEY in your server/.env file to enable the AI assistant!'
+    });
+  }
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      generationConfig: { responseMimeType: 'application/json' }
+    });
+
+    const prompt = `You are a helpful, professional AI diagnostic helper for a home services mobile application called "Swiftly".
+Your job is to analyze the customer's household issue and output a structured JSON response identifying the problem, estimating its urgency, matching it to one of the app's service categories, and providing DIY safety action steps.
+
+Here are the service categories available in the app:
+1. "Cleaning" (for dusting, bathroom/kitchen deep cleaning, home sanitation)
+2. "Electrical" (for wiring, short circuits, breaker audits, socket repairs)
+3. "Plumbing" (for pipes, clogged drains, leaking faucets, sink replacements)
+4. "Sanitization" (for pest control, termite spraying, roach/rodent removal)
+5. "General" (for any issue that doesn't fit the above categories)
+
+You must return a valid JSON object matching the following structure and no other text:
+{
+  "diagnosis": "A concise, professional explanation of what the issue likely is and what causes it.",
+  "urgency": "Low" or "Medium" or "High" or "Emergency",
+  "recommendedCategory": "Cleaning" or "Electrical" or "Plumbing" or "Sanitization" or "General",
+  "actions": [
+    "Safety or DIY step 1",
+    "Safety or DIY step 2",
+    "Safety or DIY step 3"
+  ],
+  "bookingSuggestionText": "A 1-sentence prompt recommending why hiring an expert in this category is best."
+}
+
+User's described issue:
+"${query}"`;
+
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
+    
+    let parsedResponse;
+    try {
+      parsedResponse = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error("Failed to parse Gemini response as JSON:", responseText);
+      return res.status(500).json({ success: false, message: 'AI returned an invalid response format. Please try again.' });
+    }
+
+    res.json({
+      success: true,
+      ...parsedResponse
+    });
+
+  } catch (error) {
+    console.error("Gemini API call failed:", error);
+    res.status(500).json({
+      success: false,
+      message: 'Could not connect to Gemini API. Check your API key or network connection.'
+    });
+  }
 });
 
 app.listen(PORT, () => {

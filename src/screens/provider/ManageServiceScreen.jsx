@@ -19,13 +19,13 @@ import { AuthContext } from "../../context/AuthContext";
 import { ThemeContext } from "../../context/ThemeContext";
 import API from "../../api/axios";
 import colors from "../../styles/colors";
+import Header from "../../components/Header";
 
 const { width } = Dimensions.get("window");
 
 const ManageServiceScreen = ({ navigation }) => {
-  const { user, logout } = useContext(AuthContext);
-  const { isDarkMode, toggleTheme, background, cardBackground, text, secondaryText, border, inputBackground } = useContext(ThemeContext);
-  const [menuVisible, setMenuVisible] = useState(false);
+  const { user } = useContext(AuthContext);
+  const { isDarkMode, background, cardBackground, text, secondaryText, border, inputBackground } = useContext(ThemeContext);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
@@ -35,8 +35,6 @@ const ManageServiceScreen = ({ navigation }) => {
   const [price, setPrice] = useState("");
   const [contact, setContact] = useState("");
   const [displayImage, setDisplayImage] = useState("");
-
-  const avatarUrl = user?.profileUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150";
 
   // Load existing service configuration if available
   useEffect(() => {
@@ -65,7 +63,7 @@ const ManageServiceScreen = ({ navigation }) => {
 
   const handleSaveService = async () => {
     if (!serviceName.trim() || !description.trim() || !price.trim() || !contact.trim()) {
-      alert("Validation Error", "All fields are required to setup your service profile.");
+      Alert.alert("Validation Error", "All fields are required to setup your service profile.");
       return;
     }
 
@@ -82,7 +80,7 @@ const ManageServiceScreen = ({ navigation }) => {
       });
 
       if (response.data.success) {
-        alert(
+        Alert.alert(
           "Service Catalog Updated",
           "Your service details have been successfully saved and published! Customers can now book your services.",
           [{ text: "OK", onPress: () => navigation.navigate("Home") }]
@@ -90,7 +88,7 @@ const ManageServiceScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error("Failed to save service:", error);
-      alert("Error", error.response?.data?.message || "Could not publish service profile.");
+      Alert.alert("Error", error.response?.data?.message || "Could not publish service profile.");
     } finally {
       setLoading(false);
     }
@@ -100,40 +98,8 @@ const ManageServiceScreen = ({ navigation }) => {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={cardBackground} />
 
-      {/* Header / Top Bar */}
-      <View style={[styles.header, { backgroundColor: cardBackground, borderBottomColor: border }]}>
-        <View style={styles.logoContainer}>
-          <Text style={[styles.logoText, { color: isDarkMode ? '#FFFFFF' : '#6C63FF' }]}>Swiftly</Text>
-          <View style={styles.logoDot} />
-
-          {/* Theme Toggler Button just after Swiftly text */}
-          <TouchableOpacity 
-            onPress={toggleTheme} 
-            style={[styles.themeToggle, { borderColor: border, backgroundColor: isDarkMode ? '#25252A' : '#F2F4F7' }]}
-            activeOpacity={0.7}
-          >
-            <Ionicons 
-              name={isDarkMode ? "sunny" : "moon"} 
-              size={16} 
-              color={isDarkMode ? "#FFD700" : "#6C63FF"} 
-            />
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity
-          style={styles.profileContainer}
-          onPress={() => setMenuVisible(true)}
-          activeOpacity={0.7}
-        >
-          <View style={styles.userInfo}>
-            <Text style={[styles.welcomeText, { color: secondaryText }]}>Hello,</Text>
-            <Text style={[styles.userNameText, { color: text }]} numberOfLines={1}>
-              {user?.name || "Guest"}
-            </Text>
-          </View>
-          <Image source={{ uri: avatarUrl }} style={[styles.avatar, { borderColor: isDarkMode ? '#A0A5B5' : '#6C63FF' }]} />
-        </TouchableOpacity>
-      </View>
+      {/* Unified Header */}
+      <Header />
 
       {fetching ? (
         <View style={styles.loadingContainer}>
@@ -229,49 +195,6 @@ const ManageServiceScreen = ({ navigation }) => {
           </View>
         </ScrollView>
       )}
-
-      {/* Logout Dropdown Popup Modal */}
-      <Modal
-        visible={menuVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setMenuVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setMenuVisible(false)}
-        >
-          <View style={[styles.menuCard, { backgroundColor: cardBackground }]}>
-            <View style={styles.menuHeader}>
-              <Image source={{ uri: avatarUrl }} style={styles.largeAvatar} />
-              <View style={styles.menuUserDetail}>
-                <Text style={[styles.menuUserName, { color: text }]} numberOfLines={1}>{user?.name}</Text>
-                <Text style={[styles.menuUserEmail, { color: secondaryText }]} numberOfLines={1}>{user?.email}</Text>
-              </View>
-            </View>
-
-            <View style={[styles.menuSeparator, { backgroundColor: border }]} />
-
-            <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={() => {
-                setMenuVisible(false);
-                logout();
-              }}
-            >
-              <Text style={styles.logoutText}>🚪 Logout</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => setMenuVisible(false)}
-            >
-              <Text style={[styles.cancelText, { color: secondaryText }]}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </SafeAreaView>
   );
 };

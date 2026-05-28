@@ -19,6 +19,7 @@ import { AuthContext } from "../../context/AuthContext";
 import { ThemeContext } from "../../context/ThemeContext";
 import API from "../../api/axios";
 import colors from "../../styles/colors";
+import Header from "../../components/Header";
 
 const { width } = Dimensions.get("window");
 
@@ -28,7 +29,6 @@ const ProviderBookingsScreen = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [menuVisible, setMenuVisible] = useState(false);
 
   const avatarUrl = user?.profileUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150";
 
@@ -64,11 +64,11 @@ const ProviderBookingsScreen = () => {
         if (newStatus === "in_progress") alertMessage = "Booking accepted and set to In Progress.";
         else if (newStatus === "completed") alertMessage = "Booking marked as Completed.";
         else if (newStatus === "cancelled") alertMessage = "Booking rejected and marked as Cancelled.";
-        alert("Status Updated", alertMessage);
+        Alert.alert("Status Updated", alertMessage);
       }
     } catch (error) {
       console.error("Failed to change status:", error);
-      alert("Error", "Could not update booking status.");
+      Alert.alert("Error", "Could not update booking status.");
     }
   };
 
@@ -179,40 +179,8 @@ const ProviderBookingsScreen = () => {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={cardBackground} />
 
-      {/* Consistent Header */}
-      <View style={[styles.header, { backgroundColor: cardBackground, borderBottomColor: border }]}>
-        <View style={styles.logoContainer}>
-          <Text style={[styles.logoText, { color: isDarkMode ? '#FFFFFF' : '#6C63FF' }]}>Swiftly</Text>
-          <View style={styles.logoDot} />
-
-          {/* Theme Toggler Button just after Swiftly text */}
-          <TouchableOpacity 
-            onPress={toggleTheme} 
-            style={[styles.themeToggle, { borderColor: border, backgroundColor: isDarkMode ? '#25252A' : '#F2F4F7' }]}
-            activeOpacity={0.7}
-          >
-            <Ionicons 
-              name={isDarkMode ? "sunny" : "moon"} 
-              size={16} 
-              color={isDarkMode ? "#FFD700" : "#6C63FF"} 
-            />
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity
-          style={styles.profileContainer}
-          onPress={() => setMenuVisible(true)}
-          activeOpacity={0.7}
-        >
-          <View style={styles.userInfo}>
-            <Text style={[styles.welcomeText, { color: secondaryText }]}>Hello,</Text>
-            <Text style={[styles.userNameText, { color: text }]} numberOfLines={1}>
-              {user?.name || "Guest"}
-            </Text>
-          </View>
-          <Image source={{ uri: avatarUrl }} style={[styles.avatar, { borderColor: isDarkMode ? '#A0A5B5' : '#6C63FF' }]} />
-        </TouchableOpacity>
-      </View>
+      {/* Unified Header */}
+      <Header />
 
       <View style={styles.content}>
         <View style={styles.sectionHeader}>
@@ -248,49 +216,6 @@ const ProviderBookingsScreen = () => {
           />
         )}
       </View>
-
-      {/* Logout popover dialog */}
-      <Modal
-        visible={menuVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setMenuVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setMenuVisible(false)}
-        >
-          <View style={[styles.menuCard, { backgroundColor: cardBackground }]}>
-            <View style={styles.menuHeader}>
-              <Image source={{ uri: avatarUrl }} style={styles.largeAvatar} />
-              <View style={styles.menuUserDetail}>
-                <Text style={[styles.menuUserName, { color: text }]} numberOfLines={1}>{user?.name}</Text>
-                <Text style={[styles.menuUserEmail, { color: secondaryText }]} numberOfLines={1}>{user?.email}</Text>
-              </View>
-            </View>
-
-            <View style={[styles.menuSeparator, { backgroundColor: border }]} />
-
-            <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={() => {
-                setMenuVisible(false);
-                logout();
-              }}
-            >
-              <Text style={styles.logoutText}>🚪 Logout</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => setMenuVisible(false)}
-            >
-              <Text style={[styles.cancelText, { color: secondaryText }]}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </SafeAreaView>
   );
 };

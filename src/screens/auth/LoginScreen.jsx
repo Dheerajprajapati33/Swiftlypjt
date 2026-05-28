@@ -10,13 +10,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
-
 import { AuthContext } from '../../context/AuthContext';
-import colors from '../../styles/colors';
+import { ThemeContext } from '../../context/ThemeContext';
+import Header from '../../components/Header';
 
 const LoginScreen = ({ navigation }) => {
   const { login } = useContext(AuthContext);
+  const { isDarkMode, background, cardBackground, text, secondaryText, border, inputBackground } = useContext(ThemeContext);
   const [submitting, setSubmitting] = useState(false);
 
   // Form State
@@ -86,7 +89,6 @@ const LoginScreen = ({ navigation }) => {
     setErrors(newErrors);
 
     if (hasError) {
-      alert("Validation Error", "Please fix the errors in the form before submitting.");
       return;
     }
 
@@ -97,100 +99,118 @@ const LoginScreen = ({ navigation }) => {
     if (result.success) {
       // User is redirected by the StackNavigator conditional check
     } else {
-      alert('Login Failed', result.error);
+      Alert.alert('Login Failed', result.error);
     }
   };
 
   const getInputStyle = (field) => {
+    const baseStyle = [
+      styles.input,
+      { backgroundColor: inputBackground, borderColor: border, color: text }
+    ];
     if (touched[field] && errors[field]) {
-      return [styles.input, styles.inputError];
+      return [...baseStyle, styles.inputError];
     }
     if (touched[field] && !errors[field]) {
-      return [styles.input, styles.inputSuccess];
+      return [...baseStyle, styles.inputSuccess];
     }
-    return styles.input;
+    return baseStyle;
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.keyboardContainer}
-    >
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.card}>
-          <Text style={styles.heading}>Welcome Back</Text>
-          <Text style={styles.subheading}>Log in to manage your services</Text>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={cardBackground} />
+      
+      {/* Top Header with Theme selector */}
+      <Header showProfile={false} />
 
-          {/* Email Field */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email Address</Text>
-            <TextInput
-              placeholder="Enter your registered email"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={getInputStyle('email')}
-              value={values.email}
-              onChangeText={(val) => handleChange('email', val)}
-              onBlur={() => handleBlur('email')}
-              placeholderTextColor="#999"
-            />
-            {touched.email && errors.email ? (
-              <Text style={styles.errorText}>{errors.email}</Text>
-            ) : null}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardContainer}
+      >
+        <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+          <View style={[styles.card, { backgroundColor: cardBackground, borderColor: border }]}>
+            <Text style={[styles.heading, { color: text }]}>Welcome Back</Text>
+            <Text style={[styles.subheading, { color: secondaryText }]}>Log in to manage your services</Text>
+
+            {/* Email Field */}
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { color: text }]}>Email Address</Text>
+              <TextInput
+                placeholder="Enter your registered email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={getInputStyle('email')}
+                value={values.email}
+                onChangeText={(val) => handleChange('email', val)}
+                onBlur={() => handleBlur('email')}
+                placeholderTextColor={isDarkMode ? '#888' : '#999'}
+              />
+              {touched.email && errors.email ? (
+                <Text style={styles.errorText}>{errors.email}</Text>
+              ) : null}
+            </View>
+
+            {/* Password Field */}
+            <View style={styles.inputContainer}>
+              <View style={styles.passwordLabelRow}>
+                <Text style={[styles.label, { color: text }]}>Password</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+                  <Text style={styles.forgotPasswordLink}>Forgot?</Text>
+                </TouchableOpacity>
+              </View>
+              <TextInput
+                placeholder="Enter your password"
+                secureTextEntry
+                autoCapitalize="none"
+                style={getInputStyle('password')}
+                value={values.password}
+                onChangeText={(val) => handleChange('password', val)}
+                onBlur={() => handleBlur('password')}
+                placeholderTextColor={isDarkMode ? '#888' : '#999'}
+              />
+              {touched.password && errors.password ? (
+                <Text style={styles.errorText}>{errors.password}</Text>
+              ) : null}
+            </View>
+
+            {/* Submit Button */}
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleLogin}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Login</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Navigate to Register */}
+            <TouchableOpacity
+              style={styles.linkContainer}
+              onPress={() => navigation.navigate('Register')}
+            >
+              <Text style={[styles.linkText, { color: secondaryText }]}>
+                Don't have an account? <Text style={styles.linkTextBold}>Create Account</Text>
+              </Text>
+            </TouchableOpacity>
           </View>
-
-          {/* Password Field */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              placeholder="Enter your password"
-              secureTextEntry
-              autoCapitalize="none"
-              style={getInputStyle('password')}
-              value={values.password}
-              onChangeText={(val) => handleChange('password', val)}
-              onBlur={() => handleBlur('password')}
-              placeholderTextColor="#999"
-            />
-            {touched.password && errors.password ? (
-              <Text style={styles.errorText}>{errors.password}</Text>
-            ) : null}
-          </View>
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleLogin}
-            disabled={submitting}
-          >
-            {submitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Login</Text>
-            )}
-          </TouchableOpacity>
-
-          {/* Navigate to Register */}
-          <TouchableOpacity
-            style={styles.linkContainer}
-            onPress={() => navigation.navigate('Register')}
-          >
-            <Text style={styles.linkText}>
-              Don't have an account? <Text style={styles.linkTextBold}>Create Account</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 export default LoginScreen;
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   keyboardContainer: {
     flex: 1,
-    backgroundColor: '#F5F6FA',
   },
   container: {
     flexGrow: 1,
@@ -198,7 +218,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   card: {
-    backgroundColor: '#fff',
     borderRadius: 24,
     padding: 24,
     shadowColor: '#000',
@@ -207,16 +226,15 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 5,
     marginVertical: 20,
+    borderWidth: 1,
   },
   heading: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#111',
     textAlign: 'center',
   },
   subheading: {
     fontSize: 14,
-    color: '#666',
     textAlign: 'center',
     marginTop: 6,
     marginBottom: 24,
@@ -227,17 +245,24 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#444',
     marginBottom: 6,
+  },
+  passwordLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  forgotPasswordLink: {
+    color: '#6C63FF',
+    fontSize: 13,
+    fontWeight: '600',
   },
   input: {
     borderWidth: 1.5,
-    borderColor: '#E5E8F0',
     borderRadius: 14,
     padding: 14,
     fontSize: 15,
-    color: '#111',
-    backgroundColor: '#F9FAFC',
   },
   inputError: {
     borderColor: '#FF6363',
@@ -275,7 +300,6 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 14,
-    color: '#666',
   },
   linkTextBold: {
     color: '#6C63FF',
