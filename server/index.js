@@ -3,6 +3,7 @@ require('dotenv').config();
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
 // nodemailer
 const nodemailer = require('nodemailer');
 // AI keys
@@ -360,31 +361,48 @@ app.post('/api/bookings/book', async (req, res) => {
 
   if (process.env.RESEND_API_KEY) {
     try {
-      console.log("Sending email via Resend HTTP API...");
-      const response = await fetch('https://api.resend.com/emails', {
+      console.log("Sending email via Resend HTTP API (https)...");
+      const postData = JSON.stringify({
+        from: 'Swiftly <onboarding@resend.dev>',
+        to: userEmail,
+        subject: mailSubject,
+        text: mailText,
+        html: mailHtml
+      });
+
+      const options = {
+        hostname: 'api.resend.com',
+        port: 443,
+        path: '/emails',
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          from: 'Swiftly <onboarding@resend.dev>',
-          to: userEmail,
-          subject: mailSubject,
-          text: mailText,
-          html: mailHtml
-        })
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      };
+
+      const req = https.request(options, (res) => {
+        let body = '';
+        res.on('data', (chunk) => { body += chunk; });
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            console.log("Booking email successfully sent to " + userEmail + " via Resend.");
+          } else {
+            console.error("Resend API failed with status " + res.statusCode + ":", body);
+          }
+        });
       });
 
-      const resData = await response.json();
-      if (response.ok) {
-        console.log("Booking email successfully sent to " + userEmail + " via Resend.");
-        emailSent = true;
-      } else {
-        console.error("Resend API failed to send email:", resData);
-      }
+      req.on('error', (e) => {
+        console.error("Resend request error:", e.message);
+      });
+
+      req.write(postData);
+      req.end();
+      emailSent = true;
     } catch (resendError) {
-      console.error("Resend HTTP request failed:", resendError.message);
+      console.error("Resend execution error:", resendError.message);
     }
   } else if (transporter) {
     try {
