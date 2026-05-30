@@ -315,67 +315,97 @@ app.post('/api/bookings/book', async (req, res) => {
   db.bookings.push(newBooking);
   writeDB(db);
 
-  // Send Confirmation Email using Nodemailer
+  // Send Confirmation Email
   let emailSent = false;
   let previewUrl = null;
 
-  if (transporter) {
+  const mailSubject = `Booking Confirmed: ${serviceName} - Swiftly`;
+  const mailText = `Hello ${userName || 'Valued Customer'},\n\nYour service booking for "${serviceName}" has been successfully scheduled!\n\nBooking Details:\n- Date: ${date}\n- Time: ${time}\n- Payment Option: ${paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : 'Card Payment'}\n- Status: Processing\n\nThank you for choosing Swiftly!\n\nBest regards,\nSwiftly Team`;
+  const mailHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 12px; background-color: #ffffff;">
+      <h2 style="color: #6C63FF; text-align: center;">Booking Confirmed!</h2>
+      <p>Hello <strong>${userName || 'Valued Customer'}</strong>,</p>
+      <p>Your service booking with <strong>Swiftly</strong> has been successfully scheduled. Here are your booking details:</p>
+      
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr style="background-color: #f8f9fa;">
+          <td style="padding: 10px; border: 1px solid #ddd;"><strong>Service</strong></td>
+          <td style="padding: 10px; border: 1px solid #ddd;">${serviceName}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px; border: 1px solid #ddd;"><strong>Date</strong></td>
+          <td style="padding: 10px; border: 1px solid #ddd;">${date}</td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+          <td style="padding: 10px; border: 1px solid #ddd;"><strong>Time</strong></td>
+          <td style="padding: 10px; border: 1px solid #ddd;">${time}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px; border: 1px solid #ddd;"><strong>Payment Method</strong></td>
+          <td style="padding: 10px; border: 1px solid #ddd;">${paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : 'Card Payment'}</td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+          <td style="padding: 10px; border: 1px solid #ddd;"><strong>Status</strong></td>
+          <td style="padding: 10px; border: 1px solid #ddd;"><span style="color: #FFA500; font-weight: bold;">Processing</span></td>
+        </tr>
+      </table>
+
+      <p style="text-align: center; margin-top: 30px;">
+        <span style="background-color: #6C63FF; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">Booking ID: #${newBooking.id}</span>
+      </p>
+      <hr style="border: 0; border-top: 1px solid #ddd; margin: 30px 0;">
+      <p style="font-size: 12px; color: #888; text-align: center;">This is an automated email confirmation from Swiftly Home Services. Please do not reply directly to this email.</p>
+    </div>
+  `;
+
+  if (process.env.RESEND_API_KEY) {
+    try {
+      console.log("Sending email via Resend HTTP API...");
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: 'Swiftly <onboarding@resend.dev>',
+          to: userEmail,
+          subject: mailSubject,
+          text: mailText,
+          html: mailHtml
+        })
+      });
+
+      const resData = await response.json();
+      if (response.ok) {
+        console.log("Booking email successfully sent to " + userEmail + " via Resend.");
+        emailSent = true;
+      } else {
+        console.error("Resend API failed to send email:", resData);
+      }
+    } catch (resendError) {
+      console.error("Resend HTTP request failed:", resendError.message);
+    }
+  } else if (transporter) {
     try {
       const mailOptions = {
         from: '"Swiftly Home Services" <no-reply@swiftly.com>',
         to: userEmail,
-        subject: `Booking Confirmed: ${serviceName} - Swiftly`,
-        text: `Hello ${userName || 'Valued Customer'},\n\nYour service booking for "${serviceName}" has been successfully scheduled!\n\nBooking Details:\n- Date: ${date}\n- Time: ${time}\n- Payment Option: ${paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : 'Card Payment'}\n- Status: Processing\n\nThank you for choosing Swiftly!\n\nBest regards,\nSwiftly Team`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 12px; background-color: #ffffff;">
-            <h2 style="color: #6C63FF; text-align: center;">Booking Confirmed!</h2>
-            <p>Hello <strong>${userName || 'Valued Customer'}</strong>,</p>
-            <p>Your service booking with <strong>Swiftly</strong> has been successfully scheduled. Here are your booking details:</p>
-            
-
-            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-              <tr style="background-color: #f8f9fa;">
-                <td style="padding: 10px; border: 1px solid #ddd;"><strong>Service</strong></td>
-                <td style="padding: 10px; border: 1px solid #ddd;">${serviceName}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px; border: 1px solid #ddd;"><strong>Date</strong></td>
-                <td style="padding: 10px; border: 1px solid #ddd;">${date}</td>
-              </tr>
-              <tr style="background-color: #f8f9fa;">
-                <td style="padding: 10px; border: 1px solid #ddd;"><strong>Time</strong></td>
-                <td style="padding: 10px; border: 1px solid #ddd;">${time}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px; border: 1px solid #ddd;"><strong>Payment Method</strong></td>
-                <td style="padding: 10px; border: 1px solid #ddd;">${paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : 'Card Payment'}</td>
-              </tr>
-              <tr style="background-color: #f8f9fa;">
-                <td style="padding: 10px; border: 1px solid #ddd;"><strong>Status</strong></td>
-                <td style="padding: 10px; border: 1px solid #ddd;"><span style="color: #FFA500; font-weight: bold;">Processing</span></td>
-              </tr>
-            </table>
-
-            
-            <p style="text-align: center; margin-top: 30px;">
-              <span style="background-color: #6C63FF; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">Booking ID: #${newBooking.id}</span>
-            </p>
-            <hr style="border: 0; border-top: 1px solid #ddd; margin: 30px 0;">
-            <p style="font-size: 12px; color: #888; text-align: center;">This is an automated email confirmation from Swiftly Home Services. Please do not reply directly to this email.</p>
-          </div>
-        `
+        subject: mailSubject,
+        text: mailText,
+        html: mailHtml
       };
 
       const info = await transporter.sendMail(mailOptions);
       previewUrl = nodemailer.getTestMessageUrl(info);
-      console.log(`Booking email successfully sent to ${userEmail}.`);
+      console.log(`Booking email successfully sent to ${userEmail} via SMTP.`);
       console.log(`Preview Email URL: ${previewUrl}`);
       emailSent = true;
     } catch (mailError) {
       console.error("Nodemailer failed to send email:", mailError.message);
     }
   } else {
-    console.log("No SMTP Transporter configured. Booking logged to console:\n", newBooking);
+    console.log("No Email service configured. Booking logged to console:\n", newBooking);
   }
 
   res.status(201).json({
