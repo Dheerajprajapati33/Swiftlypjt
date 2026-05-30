@@ -3,10 +3,14 @@ require('dotenv').config();
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+// nodemailer
 const nodemailer = require('nodemailer');
+// AI keys
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
+
+//to run on localhost port 5000
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
@@ -14,6 +18,7 @@ app.use(express.json());
 
 const DB_FILE = path.join(__dirname, 'database.json');
 
+// ADD DEFAULT_SERVICES
 const DEFAULT_SERVICES = [
   {
     _id: '1',
@@ -64,7 +69,8 @@ const DEFAULT_SERVICES = [
 // Initialize database
 if (!fs.existsSync(DB_FILE)) {
   fs.writeFileSync(DB_FILE, JSON.stringify({ users: [], bookings: [], services: DEFAULT_SERVICES }, null, 2));
-} else {
+} 
+else {
   try {
     const data = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
     if (!data.services) {
@@ -89,7 +95,7 @@ function writeDB(data) {
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
 }
 
-// SMTP Transporter setup (Ethereal test email or standard SMTP)
+// SMTP Transporter setup ( test email)
 let transporter = null;
 let testAccountInfo = null;
 
@@ -140,6 +146,7 @@ setupMail();
 app.post('/api/auth/register', (req, res) => {
   const { name, email, profileUrl, role, password } = req.body;
 
+  //for validation
   if (!name || !email || !password || !role) {
     return res.status(400).json({ message: 'Name, email, role, and password are required' });
   }
@@ -157,7 +164,7 @@ app.post('/api/auth/register', (req, res) => {
     email: email.toLowerCase(),
     profileUrl: profileUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
     role: role, // customer or service_provider
-    password // In production, hash this password (e.g. bcrypt)
+    password 
   };
 
   db.users.push(newUser);
@@ -386,6 +393,7 @@ app.post('/api/ai/diagnose', async (req, res) => {
     return res.status(400).json({ message: 'Query is required for AI diagnosis.' });
   }
 
+  // API key
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey.trim() === '' || apiKey.startsWith('your_')) {
     return res.status(200).json({

@@ -123,7 +123,7 @@ const RegisterScreen = ({ navigation }) => {
     setErrors(newErrors);
 
     if (hasError) {
-      Alert.alert("Validation Error", "Please fix the errors in the form before submitting.");
+      alert("Validation Error", "Please fix the errors in the form before submitting.");
       return;
     }
 
@@ -138,7 +138,7 @@ const RegisterScreen = ({ navigation }) => {
     setSubmitting(false);
 
     if (result.success) {
-      Alert.alert(
+      alert(
         "Account Created", 
         "Your account has been registered successfully! Please login with your details.",
         [
@@ -146,7 +146,7 @@ const RegisterScreen = ({ navigation }) => {
         ]
       );
     } else {
-      Alert.alert("Registration Failed", result.error);
+      alert("Registration Failed", result.error);
     }
   };
 

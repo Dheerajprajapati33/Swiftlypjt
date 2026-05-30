@@ -99,7 +99,7 @@ const LoginScreen = ({ navigation }) => {
     if (result.success) {
       // User is redirected by the StackNavigator conditional check
     } else {
-      Alert.alert('Login Failed', result.error);
+      alert('Login Failed', result.error);
     }
   };
 

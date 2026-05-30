@@ -23,7 +23,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
   const handleResetPassword = () => {
     if (!email.trim()) {
-      Alert.alert('Validation Error', 'Please enter your email address.');
+      alert('Validation Error', 'Please enter your email address.');
       return;
     }
     
@@ -31,7 +31,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
     // Simulate API call
     setTimeout(() => {
       setSubmitting(false);
-      Alert.alert(
+      alert(
         'Reset Link Sent',
         'If an account exists for this email, we have sent password reset instructions.',
         [{ text: 'OK', onPress: () => navigation.navigate('Login') }]

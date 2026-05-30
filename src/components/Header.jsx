@@ -28,7 +28,7 @@ const Header = ({ showProfile = true }) => {
           <Text style={[styles.logoText, { color: isDarkMode ? '#FFFFFF' : '#6C63FF' }]}>Swiftly</Text>
           <View style={styles.logoDot} />
 
-          {/* Theme Selector Segmented Control just after Swiftly text */}
+          {/* Theme selector segmented control just after Swiftly text */}
           <View style={[styles.themeContainer, { backgroundColor: isDarkMode ? '#25252A' : '#F2F4F7', borderColor: border }]}>
             <TouchableOpacity
               onPress={() => isDarkMode && toggleTheme()}

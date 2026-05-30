@@ -66,11 +66,11 @@ const BookingsScreen = () => {
         setBookings((prev) =>
           prev.map((b) => (b.id === bookingId ? { ...b, status: newStatus } : b))
         );
-        Alert.alert("Status Updated", `Booking status set to "${newStatus === 'processing' ? 'Processing' : newStatus === 'in_progress' ? 'In Progress' : 'Completed'}".`);
+        alert("Status Updated", `Booking status set to "${newStatus === 'processing' ? 'Processing' : newStatus === 'in_progress' ? 'In Progress' : 'Completed'}".`);
       }
     } catch (error) {
       console.error("Failed to update status:", error);
-      Alert.alert("Error", "Unable to update booking status.");
+      alert("Error", "Unable to update booking status.");
     }
   };
 

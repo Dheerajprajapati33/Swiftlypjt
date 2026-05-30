@@ -64,11 +64,11 @@ const ProviderBookingsScreen = () => {
         if (newStatus === "in_progress") alertMessage = "Booking accepted and set to In Progress.";
         else if (newStatus === "completed") alertMessage = "Booking marked as Completed.";
         else if (newStatus === "cancelled") alertMessage = "Booking rejected and marked as Cancelled.";
-        Alert.alert("Status Updated", alertMessage);
+        alert("Status Updated", alertMessage);
       }
     } catch (error) {
       console.error("Failed to change status:", error);
-      Alert.alert("Error", "Could not update booking status.");
+      alert("Error", "Could not update booking status.");
     }
   };
 

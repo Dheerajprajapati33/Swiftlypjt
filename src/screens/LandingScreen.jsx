@@ -33,7 +33,7 @@ const LandingScreen = ({ navigation }) => {
         </View>
 
         <Text style={[styles.footerText, { color: secondaryText }]}>
-          Project 25 Prototype App • All Rights Reserved
+          Project Swiftly Prototype App • All Rights Reserved
         </Text>
       </View>
     </SafeAreaView>

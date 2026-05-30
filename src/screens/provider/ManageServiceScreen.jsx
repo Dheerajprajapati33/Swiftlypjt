@@ -63,7 +63,7 @@ const ManageServiceScreen = ({ navigation }) => {
 
   const handleSaveService = async () => {
     if (!serviceName.trim() || !description.trim() || !price.trim() || !contact.trim()) {
-      Alert.alert("Validation Error", "All fields are required to setup your service profile.");
+      alert("Validation Error", "All fields are required to setup your service profile.");
       return;
     }
 
@@ -80,7 +80,7 @@ const ManageServiceScreen = ({ navigation }) => {
       });
 
       if (response.data.success) {
-        Alert.alert(
+        alert(
           "Service Catalog Updated",
           "Your service details have been successfully saved and published! Customers can now book your services.",
           [{ text: "OK", onPress: () => navigation.navigate("Home") }]
@@ -88,7 +88,7 @@ const ManageServiceScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error("Failed to save service:", error);
-      Alert.alert("Error", error.response?.data?.message || "Could not publish service profile.");
+      alert("Error", error.response?.data?.message || "Could not publish service profile.");
     } finally {
       setLoading(false);
     }

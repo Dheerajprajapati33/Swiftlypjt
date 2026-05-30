@@ -46,7 +46,7 @@ const DashboardScreen = () => {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
 
-  // Fallback avatar image
+  // avatar image
   const avatarUrl = user?.profileUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150";
 
   // AI Diagnostic State
@@ -68,7 +68,7 @@ const DashboardScreen = () => {
 
   const handleRunDiagnosis = async () => {
     if (!aiQuery.trim()) {
-      Alert.alert('Input Required', 'Please enter a description of your household problem.');
+      alert('Input Required', 'Please enter a description of your household problem.');
       return;
     }
     setAiLoading(true);
@@ -87,7 +87,7 @@ const DashboardScreen = () => {
       }
     } catch (error) {
       console.error("AI Diagnostic query failed:", error);
-      Alert.alert('Network Error', 'Failed to reach AI Diagnostic server. Please ensure backend is running.');
+      alert('Network Error', 'Failed to reach AI Diagnostic server. Please ensure backend is running.');
     } finally {
       setAiLoading(false);
     }
@@ -147,13 +147,13 @@ const DashboardScreen = () => {
 
   const handleBookService = async () => {
     if (!date.trim() || !time.trim()) {
-      Alert.alert('Validation Error', 'Please fill in both Date and Time.');
+      alert('Validation Error', 'Please fill in both Date and Time.');
       return;
     }
 
     if (paymentMethod === 'card') {
       if (!cardDetails.number || !cardDetails.expiry || !cardDetails.cvv) {
-        Alert.alert('Validation Error', 'Please enter card payment details.');
+        alert('Validation Error', 'Please enter card payment details.');
         return;
       }
     }
@@ -176,11 +176,11 @@ const DashboardScreen = () => {
           setPreviewUrl(response.data.previewUrl);
         }
       } else {
-        Alert.alert('Booking Error', 'Failed to complete booking. Please try again.');
+        alert('Booking Error', 'Failed to complete booking. Please try again.');
       }
     } catch (error) {
       console.error('Booking request failed:', error);
-      Alert.alert('Network Error', error.response?.data?.message || 'Could not reach server.');
+      alert('Network Error', error.response?.data?.message || 'Could not reach server.');
     } finally {
       setBookingLoading(false);
     }
@@ -192,7 +192,7 @@ const DashboardScreen = () => {
       if (supported) {
         await Linking.openURL(previewUrl);
       } else {
-        Alert.alert('Error', "Can't open preview URL: " + previewUrl);
+        alert('Error', "Can't open preview URL: " + previewUrl);
       }
     }
   };
@@ -285,6 +285,7 @@ const DashboardScreen = () => {
                     </TouchableOpacity>
                   </View>
                 ) : (
+
                   /* Form View */
                   <View>
                     <Text style={[styles.modalTitle, { color: text }]}>Book Service</Text>
@@ -426,7 +427,7 @@ const DashboardScreen = () => {
         </Modal>
       )}
 
-      {/* Floating AI Diagnostic Assistant Button */}
+      {/*  AI Diagnostic Assistant Button */}
       <TouchableOpacity
         style={styles.floatingAiButton}
         onPress={() => setAiModalVisible(true)}
@@ -505,7 +506,7 @@ const DashboardScreen = () => {
                     <Text style={[styles.aiDiagnosisText, { color: text }]}>{aiResult.diagnosis}</Text>
                   </View>
 
-                  {/* Safety / DIY checks */}
+                  {/* Safety check*/}
                   {aiResult.actions && aiResult.actions.length > 0 && (
                     <View style={styles.actionsSection}>
                       <Text style={[styles.sectionSubtitleText, { color: text }]}>⚠️ Recommended Safety Checks:</Text>

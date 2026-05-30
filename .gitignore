@@ -39,3 +39,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# local env and database files
+server/.env
+server/database.json
+
