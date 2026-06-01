@@ -359,7 +359,67 @@ app.post('/api/bookings/book', async (req, res) => {
     </div>
   `;
 
-  if (process.env.RESEND_API_KEY) {
+  if (process.env.SENDGRID_API_KEY) {
+    try {
+      console.log("Sending email via SendGrid HTTP API...");
+      const postData = JSON.stringify({
+        personalizations: [
+          {
+            to: [
+              {
+                email: userEmail
+              }
+            ]
+          }
+        ],
+        from: {
+          email: process.env.SMTP_USER || 'swiftlypjt@gmail.com',
+          name: 'Swiftly Home Services'
+        },
+        subject: mailSubject,
+        content: [
+          {
+            type: 'text/html',
+            value: mailHtml
+          }
+        ]
+      });
+
+      const options = {
+        hostname: 'api.sendgrid.com',
+        port: 443,
+        path: '/v3/mail/send',
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      };
+
+      const req = https.request(options, (res) => {
+        let body = '';
+        res.on('data', (chunk) => { body += chunk; });
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            console.log("Booking email successfully sent to " + userEmail + " via SendGrid.");
+          } else {
+            console.error("SendGrid API failed with status " + res.statusCode + ":", body);
+          }
+        });
+      });
+
+      req.on('error', (e) => {
+        console.error("SendGrid request error:", e.message);
+      });
+
+      req.write(postData);
+      req.end();
+      emailSent = true;
+    } catch (sgError) {
+      console.error("SendGrid execution error:", sgError.message);
+    }
+  } else if (process.env.RESEND_API_KEY) {
     try {
       console.log("Sending email via Resend HTTP API (https)...");
       const postData = JSON.stringify({
